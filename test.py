@@ -20,17 +20,17 @@ if __name__ == '__main__':
 
     test_file = np.load("test.npz")
     test_data = test_file["arr_0"]
+    if test_data.shape[0] > 4:
+        test_data = test_data[0:4,...]
+
     test_data = np.expand_dims(np.expand_dims(np.squeeze(test_data, axis=-1), axis=0), axis=2)
     test_tensor = torch.Tensor(test_data)
     print(test_data.shape)
 
-    model.load_state_dict(torch.load('./results/model/trained_model_state_dict', map_location=torch.device('cuda:0')))
-
-    start_time = time.time()
+    model.load_state_dict(torch.load('./{}/trained_model_state_dict'.format(args.model_dir), map_location=torch.device('cpu')))
 
     prediction = test_np(args, logger, 0, model, test_tensor, None, cache_dir, 20)
 
     with open("prediction.npz", "wb") as fp:
         np.save(fp, prediction)
-
-
+        print("wrote file 'prediction.npz'")

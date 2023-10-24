@@ -18,7 +18,6 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 def visualize(inputs, targets, outputs, epoch, idx, cache_dir):
-    print(targets.shape)
     _, axarray = plt.subplots(3, targets.shape[1], figsize=(targets.shape[1] * 5, 10), squeeze=False)
 
     for t in range(targets.shape[1]):
