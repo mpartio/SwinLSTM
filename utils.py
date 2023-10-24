@@ -7,6 +7,7 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 from skimage.metrics import structural_similarity
+from torch import nn
 
 matplotlib.use('agg')
 
@@ -17,7 +18,8 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 def visualize(inputs, targets, outputs, epoch, idx, cache_dir):
-    _, axarray = plt.subplots(3, targets.shape[1], figsize=(targets.shape[1] * 5, 10))
+    print(targets.shape)
+    _, axarray = plt.subplots(3, targets.shape[1], figsize=(targets.shape[1] * 5, 10), squeeze=False)
 
     for t in range(targets.shape[1]):
         axarray[0][t].imshow(inputs[0, t, 0].detach().cpu().numpy(), cmap='gray')
@@ -39,6 +41,7 @@ def MAE(pred, true):
 def MSE(pred, true):
     return np.mean((pred - true) ** 2, axis=(0, 1)).sum()
 
+
 # cite the 'PSNR' code from E3D-LSTM, Thanks!
 # https://github.com/google/e3d_lstm/blob/master/src/trainer.py line 39-40
 def PSNR(pred, true):
@@ -57,13 +60,16 @@ def compute_metrics(predictions, targets):
     for batch in range(batch_size):
         for frame in range(Seq_len):
             ssim += structural_similarity(targets[batch, frame].squeeze(),
-                                          predictions[batch, frame].squeeze())
+                                          predictions[batch, frame].squeeze(), data_range=1.0)
 
     ssim /= (batch_size * Seq_len)
 
     mse = MSE(predictions, targets)
 
-    return mse, ssim
+    loss = nn.BCEWithLogitsLoss()
+    bce = loss(torch.from_numpy(predictions), torch.from_numpy(targets)).numpy()
+
+    return mse, ssim, bce
 
 def check_dir(path):
     if not os.path.exists(path):

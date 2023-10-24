@@ -3,8 +3,7 @@ import torch.nn as nn
 from configs import get_args
 from functions import train, test
 from torch.utils.data import DataLoader
-from dataset import Moving_MNIST
-
+from saf import SAFDataLoader
 
 def setup(args):
     if args.model == 'SwinLSTM-B':
@@ -24,16 +23,22 @@ def setup(args):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    criterion = nn.BCEWithLogitsLoss()
 
-    train_dataset = Moving_MNIST(args, split='train')
-    valid_dataset = Moving_MNIST(args, split='valid')
+    saf = SAFDataLoader(batch_size=args.train_batch_size)
+
+    train_dataset = saf.get_dataset(take_ratio=0.8)
+    valid_dataset = saf.get_dataset(skip_ratio=0.8)
+
+    #train_dataset = Moving_MNIST(args, split='train')
+    #valid_dataset = Moving_MNIST(args, split='valid')
 
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size,
-                              num_workers=args.num_workers, shuffle=True, pin_memory=True, drop_last=True)
+                              num_workers=args.num_workers, pin_memory=True, drop_last=True)
 
     valid_loader = DataLoader(valid_dataset, batch_size=args.valid_batch_size,
-                             num_workers=args.num_workers, shuffle=False, pin_memory=True, drop_last=True)
+                             num_workers=args.num_workers, pin_memory=True, drop_last=True)
 
     return model, criterion, optimizer, train_loader, valid_loader
 
@@ -47,7 +52,7 @@ def main():
 
     train_losses, valid_losses = [], []
     
-    best_metric = (0, float('inf'), float('inf'))
+    best_metric = (0, float('inf'), float('inf'), float('inf'))
 
     for epoch in range(args.epochs):
 
@@ -58,7 +63,7 @@ def main():
 
         if (epoch + 1) % args.epoch_valid == 0:
 
-            valid_loss, mse, ssim = test(args, logger, epoch, model, valid_loader, criterion, cache_dir)
+            valid_loss, mse, ssim, bce = test(args, logger, epoch, model, valid_loader, criterion, cache_dir)
 
             valid_losses.append(valid_loss)
             
@@ -66,11 +71,16 @@ def main():
 
             if mse < best_metric[1]:
                 torch.save(model.state_dict(), f'{model_dir}/trained_model_state_dict')
-                best_metric = (epoch, mse, ssim)
+                best_metric = (epoch, mse, ssim, bce)
+                logger.info(f"Saved current state to {model_dir}/trained_model_state_dict")
 
-            logger.info(f'[Current Best] EP:{best_metric[0]:04d} MSE:{best_metric[1]:.4f} SSIM:{best_metric[2]:.4f}')
+            logger.info(f'[Current Best] EP:{best_metric[0]:04d} MSE:{best_metric[1]:.4f} SSIM:{best_metric[2]:.4f} BCE:{best_metric[3]:.4f}')
 
-        print(f'Time usage per epoch: {time.time() - start_time:.0f}s')
+            if epoch - best_metric[0] > 50:
+                logger.info("More than 50 epoch without improvements - early stop")
+                break
+
+        logger.info(f'Epoch {epoch}/{args.epochs}: time usage: {time.time() - start_time:.0f}s')
 
 if __name__ == '__main__':
     main()

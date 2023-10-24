@@ -108,14 +108,35 @@ def test(args, logger, epoch, model, test_loader, criterion, cache_dir):
             inputs_len = inputs.shape[1]
             outputs = outputs[:, inputs_len - 1:]
 
-            mse, ssim = compute_metrics(outputs, targets)
+            mse, ssim, bce = compute_metrics(outputs, targets)
 
             mses.append(mse)
             ssims.append(ssim)
 
             if batch_idx and batch_idx % args.log_valid == 0:
                 logger.info(
-                    f'EP:{epoch:04d} BI:{batch_idx:03d}/{num_batches:03d} Loss:{np.mean(losses):.6f} MSE:{mse:.4f} SSIM:{ssim:.4f}')
+                        f'EP:{epoch:04d} BI:{batch_idx:03d}/{num_batches:03d} Loss:{np.mean(losses):.6f} MSE:{mse:.4f} SSIM:{ssim:.4f} BCE:{bce:.4f}')
                 visualize(inputs, targets, outputs, epoch, batch_idx, cache_dir)
 
-    return np.mean(losses), np.mean(mses), np.mean(ssims)
+    return np.mean(losses), np.mean(mses), np.mean(ssims), np.mean(bce)
+
+def test_np(args, logger, epoch, model, inputs, criterion, cache_dir, n_pred):
+    model.eval()
+    losses, mses, ssims = [], [], []
+
+    with torch.no_grad():
+        inputs = inputs.float().to(args.device)
+
+        if args.model == 'SwinLSTM-B':
+            outputs = model_forward_single_layer(model, inputs, n_pred, args.depths)
+
+        if args.model == 'SwinLSTM-D':
+            outputs = model_forward_multi_layer(model, inputs, n_pred, args.depths_down)
+
+        outputs = torch.stack(outputs).permute(1, 0, 2, 3, 4).contiguous().cpu()
+
+        inputs_len = inputs.shape[1]
+        outputs = outputs[:, inputs_len - 1:]
+
+        return outputs
+
