@@ -45,8 +45,8 @@ def get_args():
     parser.add_argument('--num_workers', default=1, type=int)
     parser.add_argument('--epochs', default=500, type=int)
     parser.add_argument('--epoch_valid', default=5, type=int)
-    parser.add_argument('--log_train', default=100, type=int)
-    parser.add_argument('--log_valid', default=60, type=int)
+    parser.add_argument('--log_train', default=50, type=int)
+    parser.add_argument('--log_valid', default=30, type=int)
     parser.add_argument('--lr', default=0.0001, type=float, help='Learning rate')
     parser.add_argument('--model_dir', default='results/model', type=str)
 
