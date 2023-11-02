@@ -76,14 +76,16 @@ class SAFDataGenerator:
 
         assert len(self.placeholder) > 0
         print(
-            "Generator number of batches: {} batch size: {}".format(
-                len(self), self.batch_size
+            "Generator number of samples: {} number of batches: {} batch size: {}".format(
+                len(self), len(self) // self.batch_size, self.batch_size
             )
         )
 
     def __len__(self):
-        """Return number of batches in this dataset"""
-        return len(self.placeholder) // self.batch_size
+        # """Return number of batches in this dataset"""
+        # return len(self.placeholder) // self.batch_size
+        """Return number of samples in this dataset"""
+        return len(self.placeholder)
 
     def __getitem__(self, idx):
         # placeholder X elements:
@@ -98,7 +100,7 @@ class SAFDataGenerator:
         X = ph[0]
         Y = ph[1]
 
-        x_hist = X[0 : N_HIST]
+        x_hist = X[0:N_HIST]
 
         x, y, xtimes, ytimes = self.get_xy(x_hist, Y)
 
@@ -288,8 +290,17 @@ class SAFDataLoader:
             placeholder = copy.deepcopy(self._placeholder)
 
         assert len(placeholder) > 0
+        # dict_keys(['img_size', 'include_datetime', 'include_topography', 'include_terrain_type', 'include_sun_elevation_angle', 'dataseries_file', 'batch_size', '_placeholder', 'elements', 'data', 'toc'])
 
-        gen = SAFDataGenerator(placeholder=placeholder, **self.__dict__)
+        gen = SAFDataGenerator(
+            placeholder=placeholder,
+            batch_size=self.batch_size,
+            img_size=self.img_size,
+            dataseries_file=self.dataseries_file,
+            elements=self.elements,
+            data=self.data,
+            toc=self.toc,
+        )
 
         dataset = SAFDataset(gen)
 
