@@ -23,16 +23,13 @@ def setup(args):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # criterion = nn.MSELoss()
-    criterion = nn.BCEWithLogitsLoss()
-
+    criterion = nn.MSELoss()
+    # criterion = nn.BCEWithLogitsLoss()
+    # criterion = nn.BCELoss(reduction='sum')
     saf = SAFDataLoader(batch_size=args.train_batch_size)
 
     train_dataset = saf.get_dataset(take_ratio=0.8)
     valid_dataset = saf.get_dataset(skip_ratio=0.8)
-
-    #train_dataset = Moving_MNIST(args, split='train')
-    #valid_dataset = Moving_MNIST(args, split='valid')
 
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size,
                               num_workers=args.num_workers, pin_memory=True, drop_last=True)
